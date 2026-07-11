@@ -1,6 +1,6 @@
 # Amazon Prime Clone Deployment Project
 
-![Architecture Diagram](https://github.com/anupkumarugalavat/amazon-prime-clone-deploy/raw/main/image.png)
+![Architecture Diagram](./image.png)
 
 ## Project Overview
 
