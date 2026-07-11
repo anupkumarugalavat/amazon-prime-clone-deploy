@@ -153,7 +153,7 @@ resource "aws_instance" "my-ec2" {
     # ESTABLISHING SSH CONNECTION WITH EC2
     connection {
       type        = "ssh"
-      private_key = file("./DevopsProject1-key.pem") # replace with your key-name 
+      private_key = file("./<pem_key>.pem") # replace with your key-name 
       user        = "ubuntu"
       host        = self.public_ip
     }
