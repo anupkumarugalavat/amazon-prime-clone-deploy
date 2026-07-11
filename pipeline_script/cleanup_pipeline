@@ -6,7 +6,11 @@ pipeline {
     }
 
     parameters {
-        string(name: 'CLUSTER_NAME', defaultValue: 'amazon-prime-cluster', description: 'Enter your EKS cluster name')
+        string(name: 'CLUSTER_NAME', defaultValue: 'your-eks-cluster', description: 'Enter your EKS cluster name')
+        string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'Enter AWS region')
+        string(name: 'APP_NAME', defaultValue: 'sample-app', description: 'Enter your application name')
+        string(name: 'ECR_REPO_NAME', defaultValue: 'your-repo-name', description: 'Enter your ECR repository name')
+        string(name: 'HELM_RELEASE_NAME', defaultValue: 'your-helm-release', description: 'Enter Helm release name to uninstall')
     }
 
     stages {
@@ -16,7 +20,7 @@ pipeline {
                 script {
                     withCredentials([string(credentialsId: 'access-key', variable: 'AWS_ACCESS_KEY'),
                                      string(credentialsId: 'secret-key', variable: 'AWS_SECRET_KEY')]) {
-                        sh "aws eks --region us-east-1 update-kubeconfig --name ${params.CLUSTER_NAME}"
+                        sh "aws eks --region ${params.AWS_REGION} update-kubeconfig --name ${params.CLUSTER_NAME}"
                     }
                 }
             }
@@ -26,9 +30,8 @@ pipeline {
             steps {
                 script {
                     // Step 1: Delete services and deployments
-                    sh 'kubectl delete svc kubernetes || true'
-                    sh 'kubectl delete deploy pandacloud-app || true'
-                    sh 'kubectl delete svc pandacloud-app || true'
+                    sh "kubectl delete deploy ${params.APP_NAME} || true"
+                    sh "kubectl delete svc ${params.APP_NAME} || true"
 
                     // Step 2: Delete ArgoCD installation and namespace
                     sh 'kubectl delete -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml || true'
@@ -53,14 +56,14 @@ pipeline {
                 script {
                     // Step 1: Delete ECR Repository
                     sh '''
-                    aws ecr delete-repository --repository-name amazon-prime --region us-east-1 --force
+                    aws ecr delete-repository --repository-name ${params.ECR_REPO_NAME} --region ${params.AWS_REGION} --force
                     '''
 
                     // Step 2: Delete KMS Keys
                     sh '''
-                    for key in $(aws kms list-keys --region us-east-1 --query "Keys[*].KeyId" --output text); do
-                        aws kms disable-key --key-id $key --region us-east-1
-                        aws kms schedule-key-deletion --key-id $key --pending-window-in-days 7 --region us-east-1
+                    for key in $(aws kms list-keys --region ${params.AWS_REGION} --query "Keys[*].KeyId" --output text); do
+                        aws kms disable-key --key-id $key --region ${params.AWS_REGION}
+                        aws kms schedule-key-deletion --key-id $key --pending-window-in-days 7 --region ${params.AWS_REGION}
                     done
                     '''
                 }
