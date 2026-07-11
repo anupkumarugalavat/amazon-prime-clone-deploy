@@ -1,7 +1,5 @@
 # Amazon Prime Clone Deployment Project
 
-![Architecture Diagram](https://github.com/anupkumarugalavat/amazon-prime-clone-deploy/raw/main/image.png)
-
 ## Project Overview
 
 This project demonstrates deploying an Amazon Prime clone using a set of DevOps tools and practices. The primary tools include:
