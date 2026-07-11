@@ -1,6 +1,6 @@
 # Amazon Prime Clone Deployment Project
 
-![alt text](image.png)
+![Architecture Diagram](https://github.com/anupkumarugalavat/amazon-prime-clone-deploy/raw/main/image.png)
 
 ## Project Overview
 
@@ -38,9 +38,9 @@ This project demonstrates deploying an Amazon Prime clone using a set of DevOps 
 
 Open Command Prompt and run:
 
-```bash
-git clone https://github.com/pandacloud1/DevopsProject2.git
-cd DevopsProject2
+```
+git clone https://github.com/anupkumarugalavat/amazon-prime-clone-deploy.git
+cd amazon-prime-clone-deploy
 code .   # this command will open VS Code in backend
 ```
 
@@ -48,7 +48,7 @@ code .   # this command will open VS Code in backend
 
 Run the below commands to reduce the path displayed in VS Code terminal (Optional):
 
-```powershell
+```
 code $PROFILE
 function prompt {"$PWD > "}
 function prompt {$(Get-Location -Leaf) + " > "}
@@ -57,7 +57,7 @@ function prompt {$(Get-Location -Leaf) + " > "}
 1. Open `terraform_code/ec2_server/main.tf` in VS Code
 2. Run the following commands:
 
-```bash
+```
 aws configure
 terraform init
 terraform apply --auto-approve
@@ -77,11 +77,13 @@ This will create the EC2 instance, security groups, and install necessary tools 
 ### Add Jenkins Credentials
 
 Add the SonarQube token, AWS access key, and secret key in:
+
 - `Manage Jenkins → Credentials → System → Global credentials`
 
 ### Install Required Plugins
 
 Install plugins such as:
+
 - SonarQube Scanner
 - NodeJS
 - Docker
@@ -92,6 +94,7 @@ Location: `Manage Jenkins → Plugins`
 ### Global Tool Configuration
 
 Set up tools like:
+
 - JDK 17
 - SonarQube Scanner
 - NodeJS
@@ -121,28 +124,28 @@ Create and run the build pipeline in Jenkins. The pipeline will build, analyze, 
 ```groovy
 pipeline {
     agent any
-    
+
     parameters {
         string(name: 'ECR_REPO_NAME', defaultValue: 'amazon-prime', description: 'Enter repository name')
         string(name: 'AWS_ACCOUNT_ID', defaultValue: '123456789012', description: 'Enter AWS Account ID')
     }
-    
+
     tools {
         jdk 'JDK'
         nodejs 'NodeJS'
     }
-    
+
     environment {
         SCANNER_HOME = tool 'SonarQube Scanner'
     }
-    
+
     stages {
         stage('1. Git Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/pandacloud1/DevopsProject2.git'
+                git branch: 'main', url: 'https://github.com/anupkumarugalavat/amazon-prime-clone-deploy.git'
             }
         }
-        
+
         stage('2. SonarQube Analysis') {
             steps {
                 withSonarQubeEnv ('sonar-server') {
@@ -154,34 +157,34 @@ pipeline {
                 }
             }
         }
-        
+
         stage('3. Quality Gate') {
             steps {
                 waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
             }
         }
-        
+
         stage('4. Install npm') {
             steps {
                 sh "npm install"
             }
         }
-        
+
         stage('5. Trivy Scan') {
             steps {
                 sh "trivy fs . > trivy.txt"
             }
         }
-        
+
         stage('6. Build Docker Image') {
             steps {
                 sh "docker build -t ${params.ECR_REPO_NAME} ."
             }
         }
-        
+
         stage('7. Create ECR repo') {
             steps {
-                withCredentials([string(credentialsId: 'access-key', variable: 'AWS_ACCESS_KEY'), 
+                withCredentials([string(credentialsId: 'access-key', variable: 'AWS_ACCESS_KEY'),
                                  string(credentialsId: 'secret-key', variable: 'AWS_SECRET_KEY')]) {
                     sh """
                     aws configure set aws_access_key_id $AWS_ACCESS_KEY
@@ -192,10 +195,10 @@ pipeline {
                 }
             }
         }
-        
+
         stage('8. Login to ECR & tag image') {
             steps {
-                withCredentials([string(credentialsId: 'access-key', variable: 'AWS_ACCESS_KEY'), 
+                withCredentials([string(credentialsId: 'access-key', variable: 'AWS_ACCESS_KEY'),
                                  string(credentialsId: 'secret-key', variable: 'AWS_SECRET_KEY')]) {
                     sh """
                     aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
@@ -205,10 +208,10 @@ pipeline {
                 }
             }
         }
-        
+
         stage('9. Push image to ECR') {
             steps {
-                withCredentials([string(credentialsId: 'access-key', variable: 'AWS_ACCESS_KEY'), 
+                withCredentials([string(credentialsId: 'access-key', variable: 'AWS_ACCESS_KEY'),
                                  string(credentialsId: 'secret-key', variable: 'AWS_SECRET_KEY')]) {
                     sh """
                     docker push ${params.AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${params.ECR_REPO_NAME}:${BUILD_NUMBER}
@@ -217,7 +220,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('10. Cleanup Images') {
             steps {
                 sh """
@@ -304,6 +307,7 @@ pipeline {
 ## Cleanup
 
 Run cleanup pipelines to delete the resources such as:
+
 - Load balancers
 - Services
 - Deployment files
@@ -335,14 +339,14 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Cleanup K8s Resources') {
             steps {
                 script {
                     // Step 1: Delete services and deployments
                     sh 'kubectl delete svc kubernetes || true'
-                    sh 'kubectl delete deploy pandacloud-app || true'
-                    sh 'kubectl delete svc pandacloud-app || true'
+                    sh 'kubectl delete deploy amazon-prime-clone-deploy || true'
+                    sh 'kubectl delete svc amazon-prime-clone-deploy || true'
 
                     // Step 2: Delete ArgoCD installation and namespace
                     sh 'kubectl delete -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml || true'
@@ -351,7 +355,7 @@ pipeline {
                     // Step 3: List and uninstall Helm releases in prometheus namespace
                     sh 'helm list -n prometheus || true'
                     sh 'helm uninstall kube-stack -n prometheus || true'
-                    
+
                     // Step 4: Delete prometheus namespace
                     sh 'kubectl delete namespace prometheus || true'
 
@@ -361,7 +365,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Delete ECR Repository and KMS Keys') {
             steps {
                 script {
@@ -386,4 +390,8 @@ pipeline {
 
 ## Additional Information
 
-For further details, refer to the word document containing a complete write-up of the project.
+For further details, refer to the accompanying write-up document for a complete walkthrough of the project.
+
+## Repository
+
+[github.com/anupkumarugalavat/amazon-prime-clone-deploy](https://github.com/anupkumarugalavat/amazon-prime-clone-deploy)
